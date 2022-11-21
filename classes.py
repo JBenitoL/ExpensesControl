@@ -2,7 +2,7 @@ from google.colab import auth
 import gspread
 from google.auth import default
 import pandas as pd
-from naming import SHEET, DATA_SHEET, TAGS_SHEET, Columns
+from ExpensesControl.naming import SHEET, DATA_SHEET, TAGS_SHEET, Columns
 
 
 class DataExpenses:
