@@ -2,7 +2,7 @@ from google.colab import auth
 import gspread
 from google.auth import default
 import pandas as pd
-from ExpensesControl.naming import SHEET, DATA_SHEET, TAGS_SHEET, Columns
+from ExpensesControl.naming import SHEET, DATA_SHEET,, Columns
 
 
 class DataExpenses:
@@ -17,7 +17,11 @@ class DataExpenses:
     self.df = self.raw_df.copy()
   def __repr__(self):
     return repr(self.df)
-  
+
+  def recover_raw(self):
+    self.df = self.raw_df.copy()
+    return self
+    
   def filter_by_date(self, start_date=None, end_date=None):
     if not start_date:
       start_date = self.df[self.cols[0]].min()
