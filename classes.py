@@ -1,22 +1,22 @@
-from google.colab import auth
-import gspread
-from google.auth import default
+
 import pandas as pd
-from ExpensesControl.naming import SHEET, DATA_SHEET, Columns
+import csv
+from naming import SHEET, DATA_SHEET, Columns
 
 
 class DataExpenses:
-  auth.authenticate_user()
-  creds, _ = default()
-  CREDENTIALS = gspread.authorize(creds)
+  TESTING_DATA_FILE = "test_data/data_test.csv"
 
-  def __init__(self):
-    self.df = DataExpenses.get_data_df(self.CREDENTIALS)
+  def __init__(self, TESTING=False):
+    data = self.get_data(TESTING)
+    self.df = DataExpenses.transform_data_to_df(data)
     self.cols = self.df.columns.to_list()
     self.raw_df = self.df.sort_values(by=self.cols[0])
     self.df = self.raw_df.copy()
   def __repr__(self):
     return repr(self.df)
+  
+
 
   def recover_raw(self):
     self.df = self.raw_df.copy()
@@ -44,6 +44,31 @@ class DataExpenses:
     self.df = self.df.set_index(self.cols[0]).groupby(pd.Grouper(freq=period)).sum()
     return self
 
+
+  @staticmethod
+  def get_data( TESTING=False):
+    if not TESTING:
+      CREDENTIALS = DataExpenses.get_google_credentials()
+      data = CREDENTIALS.open(SHEET.NAME).worksheet(DATA_SHEET.NAME).get(DATA_SHEET.RANGE)
+    else:
+      with open(DataExpenses.TESTING_DATA_FILE, 'r') as read_obj:
+          csv_reader = csv.reader(read_obj)
+          data = list(csv_reader)
+      data = [list(filter(None, row)) for row in data]
+
+    return data
+
+  @staticmethod  
+  def get_google_credentials():
+
+    from google.colab import auth
+    import gspread
+    from google.auth import default
+
+    auth.authenticate_user()
+    creds, _ = default()
+    return gspread.authorize(creds)
+
   @staticmethod
   def create_regex(word_list, ALL=False):
     if ALL:
@@ -53,11 +78,17 @@ class DataExpenses:
 
   @staticmethod
   def join_tags(data, index):
-    return [row[:index] + [", ".join(row[index:])]  for row in data]
+    final_rows = []
+    for row in data:
+      unique_tags = set(row[index:])
+      join_tags = ", ".join(unique_tags)
+      final_rows.append(row[:index] + [join_tags])
+    return final_rows
 
-  @staticmethod
-  def get_data_df(CREDENTIALS):
-    data = CREDENTIALS.open(SHEET.NAME).worksheet(DATA_SHEET.NAME).get(DATA_SHEET.RANGE)
+
+
+  @staticmethod  
+  def transform_data_to_df(data):
     columns = data[0]
     data = DataExpenses.join_tags(data[1:], len(columns)-1)
     df = pd.DataFrame(data, columns = columns)
